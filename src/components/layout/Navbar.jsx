@@ -24,6 +24,7 @@ const navItems = [
   { label: "Stopwatch", path: "/stopwatch" },
   { label: "Countdown", path: "/countdown" },
   { label: "Calendar", path: "/calendar" },
+  { label: "Calculator", path: "/calculator" },
 ];
 
 /* ===========================
