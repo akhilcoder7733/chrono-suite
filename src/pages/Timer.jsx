@@ -1,15 +1,10 @@
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  TextField,
-} from "@mui/material";
+import { Box, Typography, Button, Stack, TextField } from "@mui/material";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import useTimer from "../hooks/useTimer";
 import formatTime from "../utils/formatTime";
 import ProgressRing from "../components/common/ProgressRing";
+import useNotification from "../app/notifications/useNotification";
 
 const PRESETS = [
   { label: "Pomodoro", value: 25 },
@@ -17,32 +12,28 @@ const PRESETS = [
   { label: "Long Break", value: 15 },
 ];
 
-const DEFAULT_MINUTES =
-  parseInt(localStorage.getItem("chrono-duration")) || 25;
+const DEFAULT_MINUTES = parseInt(localStorage.getItem("chrono-duration")) || 25;
 
 const Timer = () => {
-  const {
-    timeLeft,
-    duration,
-    isRunning,
-    start,
-    pause,
-    reset,
-    setNewDuration,
-  } = useTimer(DEFAULT_MINUTES * 60);
+  const { timeLeft, duration, isRunning, start, pause, reset, setNewDuration } =
+    useTimer(DEFAULT_MINUTES * 60);
+  const { addNotification } = useNotification();
 
-  const [customMinutes, setCustomMinutes] =
-    useState(DEFAULT_MINUTES);
+  const [customMinutes, setCustomMinutes] = useState(DEFAULT_MINUTES);
 
-  const progress =
-    ((duration - timeLeft) / duration) * 100;
+  const progress = ((duration - timeLeft) / duration) * 100;
 
   useEffect(() => {
-    localStorage.setItem(
-      "chrono-duration",
-      customMinutes
-    );
+    localStorage.setItem("chrono-duration", customMinutes);
   }, [customMinutes]);
+
+useEffect(() => {
+  if (!isRunning && timeLeft === 0) {
+    addNotification("Timer Finished", "Your countdown has completed.");
+  }
+}, [timeLeft, isRunning, addNotification]);
+
+
 
   const handleCustomApply = () => {
     if (!customMinutes || customMinutes <= 0) return;
@@ -73,6 +64,10 @@ const Timer = () => {
             onClick={() => {
               setCustomMinutes(preset.value);
               setNewDuration(preset.value * 60);
+              addNotification(
+                "Preset Selected",
+                `${preset.label} timer applied.`,
+              );
             }}
           >
             {preset.label}
@@ -108,15 +103,36 @@ const Timer = () => {
       {/* Controls */}
       <Stack direction="row" spacing={2}>
         {!isRunning ? (
-          <Button variant="contained" onClick={start}>
+          <Button
+            variant="contained"
+            onClick={() => {
+              start();
+              addNotification(
+                "Timer Started",
+                `Countdown started for ${customMinutes} minutes.`,
+              );
+            }}
+          >
             Start
           </Button>
         ) : (
-          <Button variant="outlined" onClick={pause}>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              pause();
+              addNotification("Timer Paused", "Your timer has been paused.");
+            }}
+          >
             Pause
           </Button>
         )}
-        <Button variant="text" onClick={reset}>
+        <Button
+          variant="text"
+          onClick={() => {
+            reset();
+            addNotification("Timer Reset", "Timer has been reset.");
+          }}
+        >
           Reset
         </Button>
       </Stack>
@@ -128,9 +144,7 @@ const Timer = () => {
           label="Minutes"
           size="small"
           value={customMinutes}
-          onChange={(e) =>
-            setCustomMinutes(Number(e.target.value))
-          }
+          onChange={(e) => setCustomMinutes(Number(e.target.value))}
         />
         <Button variant="contained" onClick={handleCustomApply}>
           Apply

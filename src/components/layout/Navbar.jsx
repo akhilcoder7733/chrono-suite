@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -15,6 +15,9 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import CloseIcon from "@mui/icons-material/Close";
 import { NavLink } from "react-router-dom";
 import { ColorModeContext } from "../../app/theme/ThemeContext";
+import NotificationsIcon from "@mui/icons-material/Notifications";
+import useNotification from "../../app/notifications/useNotification";
+import NotificationDrawer from "../notifications/NotificationDrawer";
 
 const navItems = [
   { label: "Timer", path: "/timer" },
@@ -103,7 +106,6 @@ const DrawerNavButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-
 const MobileMenuButton = styled(IconButton)(({ theme }) => ({
   display: "none",
 
@@ -125,7 +127,9 @@ const DrawerPanel = styled(motion.div)(({ theme }) => ({
   position: "fixed",
   top: 0,
   right: 0,
-  height: "100vh",
+  height: "100dvh",
+  overflowY: "auto",
+
   width: 320,
   padding: "40px 28px",
   display: "flex",
@@ -202,6 +206,16 @@ const Navbar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [open, setOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const { notifications } = useNotification();
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [open]);
 
   return (
     <>
@@ -221,6 +235,25 @@ const Navbar = () => {
                 {item.label}
               </DrawerNavButton>
             ))}
+            <Box position="relative">
+              <IconButton onClick={() => setNotifOpen(true)}>
+                <NotificationsIcon />
+              </IconButton>
+
+              {notifications.length > 0 && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    backgroundColor: "error.main",
+                  }}
+                />
+              )}
+            </Box>
 
             <IconButton onClick={toggleColorMode}>
               {theme.palette.mode === "dark" ? (
@@ -232,9 +265,33 @@ const Navbar = () => {
           </NavLinks>
 
           {isMobile && (
-            <MobileMenuButton onClick={() => setOpen(true)}>
-              <MenuIcon />
-            </MobileMenuButton>
+            <Box display="flex" alignItems="center" gap={1}>
+              {/* Notifications */}
+              <Box position="relative">
+                <IconButton onClick={() => setNotifOpen(true)}>
+                  <NotificationsIcon />
+                </IconButton>
+
+                {notifications.length > 0 && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      backgroundColor: "error.main",
+                    }}
+                  />
+                )}
+              </Box>
+
+              {/* Menu */}
+              <MobileMenuButton onClick={() => setOpen(true)}>
+                <MenuIcon />
+              </MobileMenuButton>
+            </Box>
           )}
         </NavbarInner>
       </NavbarWrapper>
@@ -269,25 +326,31 @@ const Navbar = () => {
 
               {/* Navigation */}
               <NavSection
-                initial="hidden"
-                animate="visible"
                 variants={{
                   hidden: {},
                   visible: {
-                    transition: { staggerChildren: 0.05 },
+                    transition: { staggerChildren: 0.06 },
                   },
                 }}
+                initial="hidden"
+                animate="visible"
               >
                 {navItems.map((item) => (
-                  <DrawerNavButton
+                  <motion.div
                     key={item.path}
-                    component={NavLink}
-                    to={item.path}
-                    onClick={() => setOpen(false)}
-                    sx={{ justifyContent: "flex-start" }}
+                    variants={{
+                      hidden: { opacity: 0, x: 20 },
+                      visible: { opacity: 1, x: 0 },
+                    }}
                   >
-                    {item.label}
-                  </DrawerNavButton>
+                    <DrawerNavButton
+                      component={NavLink}
+                      to={item.path}
+                      onClick={() => setOpen(false)}
+                    >
+                      {item.label}
+                    </DrawerNavButton>
+                  </motion.div>
                 ))}
               </NavSection>
 
@@ -323,6 +386,10 @@ const Navbar = () => {
           </>
         )}
       </AnimatePresence>
+      <NotificationDrawer
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+      />
     </>
   );
 };
